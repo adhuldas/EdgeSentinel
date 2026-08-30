@@ -4,8 +4,8 @@ import asyncio
 
 import pytest
 
-from edgeguard.core.exceptions import InvalidStateTransitionError
-from edgeguard.core.state import RuntimeState, StateMachine
+from edgesentinel.core.exceptions import InvalidStateTransitionError
+from edgesentinel.core.state import RuntimeState, StateMachine
 
 
 async def test_initial_state_defaults_to_booting() -> None:

@@ -4,9 +4,9 @@ import datetime as dt
 
 import pytest
 
-from edgeguard.core.events import Event, EventBus, Severity
-from edgeguard.core.state import RuntimeState
-from edgeguard.diagnostics.incidents import IncidentTracker, build_incidents
+from edgesentinel.core.events import Event, EventBus, Severity
+from edgesentinel.core.state import RuntimeState
+from edgesentinel.diagnostics.incidents import IncidentTracker, build_incidents
 
 
 def _state_change(

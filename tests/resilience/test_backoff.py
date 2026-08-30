@@ -4,7 +4,7 @@ import random
 
 import pytest
 
-from edgeguard.resilience.backoff import compute_delay
+from edgesentinel.resilience.backoff import compute_delay
 
 
 def test_fixed_backoff_never_grows() -> None:

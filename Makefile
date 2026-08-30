@@ -20,7 +20,7 @@ test:
 	pytest -q
 
 test-cov:
-	pytest -q --cov=edgeguard --cov-report=term-missing
+	pytest -q --cov=edgesentinel --cov-report=term-missing
 
 check: lint format-check typecheck test
 

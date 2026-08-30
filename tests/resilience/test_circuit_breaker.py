@@ -5,7 +5,7 @@ from typing import cast
 
 import pytest
 
-from edgeguard.resilience.circuit_breaker import (
+from edgesentinel.resilience.circuit_breaker import (
     CircuitBreaker,
     CircuitBreakerOpenError,
     CircuitState,

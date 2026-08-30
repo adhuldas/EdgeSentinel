@@ -2,15 +2,19 @@ from __future__ import annotations
 
 import pytest
 
-from edgeguard.core.events import Event, EventBus
-from edgeguard.core.exceptions import (
+from edgesentinel.core.events import Event, EventBus
+from edgesentinel.core.exceptions import (
     DurableOperationExhaustedError,
     InvalidDurablePayloadError,
     RuntimeNotStartedError,
 )
-from edgeguard.durability.journal import Intent, IntentJournal, IntentStatus
-from edgeguard.durability.operations import ReplayHandler, build_durable_decorator, replay_pending
-from edgeguard.persistence.database import Database
+from edgesentinel.durability.journal import Intent, IntentJournal, IntentStatus
+from edgesentinel.durability.operations import (
+    ReplayHandler,
+    build_durable_decorator,
+    replay_pending,
+)
+from edgesentinel.persistence.database import Database
 
 
 class FlakyError(Exception):
@@ -32,7 +36,7 @@ async def _all_intents(journal: IntentJournal) -> list[Intent]:
     # PENDING/IN_PROGRESS filter -- production code never needs "all of
     # them regardless of status", so this reaches into the journal's
     # backing store directly rather than adding a method to it.
-    from edgeguard.durability.journal import _row_to_intent
+    from edgesentinel.durability.journal import _row_to_intent
 
     rows = await journal._store.load_intents_by_status(
         tuple(status.value for status in IntentStatus)

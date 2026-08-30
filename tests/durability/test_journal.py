@@ -4,9 +4,9 @@ import datetime as dt
 
 import pytest
 
-from edgeguard.core.exceptions import InvalidDurablePayloadError
-from edgeguard.durability.journal import IntentJournal, IntentStatus
-from edgeguard.persistence.database import Database
+from edgesentinel.core.exceptions import InvalidDurablePayloadError
+from edgesentinel.durability.journal import IntentJournal, IntentStatus
+from edgesentinel.persistence.database import Database
 
 
 @pytest.fixture

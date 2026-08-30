@@ -4,10 +4,10 @@ import asyncio
 
 import pytest
 
-from edgeguard.core.events import Event, EventBus
-from edgeguard.core.exceptions import InvalidStateTransitionError
-from edgeguard.core.state import RuntimeState
-from edgeguard.network.monitor import LayerCheck, NetworkLayer, NetworkMonitor
+from edgesentinel.core.events import Event, EventBus
+from edgesentinel.core.exceptions import InvalidStateTransitionError
+from edgesentinel.core.state import RuntimeState
+from edgesentinel.network.monitor import LayerCheck, NetworkLayer, NetworkMonitor
 
 
 def _check(result: bool) -> LayerCheck:

@@ -5,13 +5,13 @@ from pathlib import Path
 
 import pytest
 
-from edgeguard import EdgeGuard, RuntimeState
-from edgeguard.core.events import Event, StateChangeEvent
-from edgeguard.core.exceptions import RuntimeAlreadyStartedError, RuntimeNotStartedError
-from edgeguard.durability.journal import IntentStatus
-from edgeguard.metrics.checks import HardwareStatus
-from edgeguard.network.monitor import NetworkLayer
-from edgeguard.persistence.database import Database
+from edgesentinel import EdgeSentinel, RuntimeState
+from edgesentinel.core.events import Event, StateChangeEvent
+from edgesentinel.core.exceptions import RuntimeAlreadyStartedError, RuntimeNotStartedError
+from edgesentinel.durability.journal import IntentStatus
+from edgesentinel.metrics.checks import HardwareStatus
+from edgesentinel.network.monitor import NetworkLayer
+from edgesentinel.persistence.database import Database
 
 
 class FlakyError(Exception):
@@ -19,8 +19,8 @@ class FlakyError(Exception):
 
 
 async def test_start_reaches_healthy_and_creates_data_dir_and_db(tmp_path: Path) -> None:
-    data_dir = tmp_path / "edgeguard-data"
-    guard = EdgeGuard("gateway-01", data_dir=data_dir)
+    data_dir = tmp_path / "edgesentinel-data"
+    guard = EdgeSentinel("gateway-01", data_dir=data_dir)
 
     await guard.start()
     try:
@@ -32,14 +32,14 @@ async def test_start_reaches_healthy_and_creates_data_dir_and_db(tmp_path: Path)
 
 
 async def test_stop_reaches_stopped(tmp_path: Path) -> None:
-    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    guard = EdgeSentinel("gateway-01", data_dir=tmp_path)
     await guard.start()
     await guard.stop()
     assert guard.state is RuntimeState.STOPPED
 
 
 async def test_double_start_raises(tmp_path: Path) -> None:
-    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    guard = EdgeSentinel("gateway-01", data_dir=tmp_path)
     await guard.start()
     try:
         with pytest.raises(RuntimeAlreadyStartedError):
@@ -49,13 +49,13 @@ async def test_double_start_raises(tmp_path: Path) -> None:
 
 
 async def test_stop_before_start_raises(tmp_path: Path) -> None:
-    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    guard = EdgeSentinel("gateway-01", data_dir=tmp_path)
     with pytest.raises(RuntimeNotStartedError):
         await guard.stop()
 
 
 async def test_double_stop_is_idempotent(tmp_path: Path) -> None:
-    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    guard = EdgeSentinel("gateway-01", data_dir=tmp_path)
     await guard.start()
     await guard.stop()
     await guard.stop()  # must not raise
@@ -64,11 +64,11 @@ async def test_double_stop_is_idempotent(tmp_path: Path) -> None:
 
 async def test_empty_name_is_rejected(tmp_path: Path) -> None:
     with pytest.raises(ValueError):
-        EdgeGuard("", data_dir=tmp_path)
+        EdgeSentinel("", data_dir=tmp_path)
 
 
 async def test_on_state_change_decorator_receives_ordered_transitions(tmp_path: Path) -> None:
-    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    guard = EdgeSentinel("gateway-01", data_dir=tmp_path)
     seen: list[StateChangeEvent] = []
 
     @guard.on_state_change
@@ -88,7 +88,7 @@ async def test_on_state_change_decorator_receives_ordered_transitions(tmp_path: 
 
 
 async def test_runtime_state_is_persisted_across_start_and_stop(tmp_path: Path) -> None:
-    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    guard = EdgeSentinel("gateway-01", data_dir=tmp_path)
     await guard.start()
     row = await guard.database.load_runtime_state()
     assert row is not None
@@ -108,7 +108,7 @@ async def test_runtime_state_is_persisted_across_start_and_stop(tmp_path: Path) 
 
 
 async def test_async_context_manager_starts_and_stops(tmp_path: Path) -> None:
-    async with EdgeGuard("gateway-01", data_dir=tmp_path) as guard:
+    async with EdgeSentinel("gateway-01", data_dir=tmp_path) as guard:
         state_while_open = guard.state
         assert state_while_open is RuntimeState.HEALTHY
     state_after_close = guard.state
@@ -116,7 +116,7 @@ async def test_async_context_manager_starts_and_stops(tmp_path: Path) -> None:
 
 
 async def test_failed_initialization_leaves_runtime_in_failed_state(tmp_path: Path) -> None:
-    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    guard = EdgeSentinel("gateway-01", data_dir=tmp_path)
 
     async def broken_init() -> None:
         raise RuntimeError("simulated init failure")
@@ -131,7 +131,7 @@ async def test_failed_initialization_leaves_runtime_in_failed_state(tmp_path: Pa
 
 
 async def test_concurrent_start_calls_only_one_succeeds(tmp_path: Path) -> None:
-    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    guard = EdgeSentinel("gateway-01", data_dir=tmp_path)
 
     results = await asyncio.gather(
         guard.start(), guard.start(), guard.start(), return_exceptions=True
@@ -149,7 +149,7 @@ async def test_concurrent_start_calls_only_one_succeeds(tmp_path: Path) -> None:
 async def test_reliable_decorator_retries_and_publishes_events_on_the_runtime_bus(
     tmp_path: Path,
 ) -> None:
-    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    guard = EdgeSentinel("gateway-01", data_dir=tmp_path)
     seen: list[Event] = []
 
     async def collect(event: Event) -> None:
@@ -176,7 +176,7 @@ async def test_reliable_decorator_retries_and_publishes_events_on_the_runtime_bu
 async def test_reliable_decorator_usable_before_start(tmp_path: Path) -> None:
     # Decorators typically run at import time, before start() is ever
     # called -- reliable() must not require the runtime to be running.
-    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    guard = EdgeSentinel("gateway-01", data_dir=tmp_path)
 
     @guard.reliable()
     async def op() -> str:
@@ -186,7 +186,7 @@ async def test_reliable_decorator_usable_before_start(tmp_path: Path) -> None:
 
 
 async def test_durable_decorator_journals_a_successful_call(tmp_path: Path) -> None:
-    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    guard = EdgeSentinel("gateway-01", data_dir=tmp_path)
     await guard.start()
     try:
         recorded: list[str] = []
@@ -213,7 +213,7 @@ async def test_durable_decorator_journals_a_successful_call(tmp_path: Path) -> N
 async def test_durable_decorator_registration_works_before_start(tmp_path: Path) -> None:
     # Decoration (registration) runs at import time same as reliable(), and
     # must not require the runtime to already be started.
-    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    guard = EdgeSentinel("gateway-01", data_dir=tmp_path)
 
     @guard.durable("op")
     async def op() -> str:
@@ -226,7 +226,7 @@ async def test_durable_decorator_call_before_start_raises(tmp_path: Path) -> Non
     # Unlike reliable(), calling a durable operation writes to the journal
     # before it can run at all -- it needs the database connection start()
     # opens, so it can't work before start() the way reliable() can.
-    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    guard = EdgeSentinel("gateway-01", data_dir=tmp_path)
 
     @guard.durable("op")
     async def op() -> str:
@@ -239,7 +239,7 @@ async def test_durable_decorator_call_before_start_raises(tmp_path: Path) -> Non
 async def test_durable_operation_replays_after_a_restart(tmp_path: Path) -> None:
     # First "boot": the operation fails once and is left pending in the
     # journal -- simulating a crash or reboot before it could succeed.
-    first_boot = EdgeGuard("gateway-01", data_dir=tmp_path)
+    first_boot = EdgeSentinel("gateway-01", data_dir=tmp_path)
     await first_boot.start()
 
     @first_boot.durable("publish")
@@ -250,10 +250,10 @@ async def test_durable_operation_replays_after_a_restart(tmp_path: Path) -> None
         await failing_publish(value=7)
     await first_boot.stop()
 
-    # Second "boot": a fresh EdgeGuard instance over the same data directory
+    # Second "boot": a fresh EdgeSentinel instance over the same data directory
     # and name, standing in for the process restarting. Registering the
     # same operation name lets start() replay the pending intent.
-    second_boot = EdgeGuard("gateway-01", data_dir=tmp_path)
+    second_boot = EdgeSentinel("gateway-01", data_dir=tmp_path)
     calls: list[int] = []
 
     @second_boot.durable("publish")
@@ -269,7 +269,7 @@ async def test_durable_operation_replays_after_a_restart(tmp_path: Path) -> None
 
 
 async def test_recovery_false_disables_replay_on_start(tmp_path: Path) -> None:
-    first_boot = EdgeGuard("gateway-01", data_dir=tmp_path)
+    first_boot = EdgeSentinel("gateway-01", data_dir=tmp_path)
     await first_boot.start()
 
     @first_boot.durable("publish")
@@ -280,7 +280,7 @@ async def test_recovery_false_disables_replay_on_start(tmp_path: Path) -> None:
         await failing_publish()
     await first_boot.stop()
 
-    second_boot = EdgeGuard("gateway-01", data_dir=tmp_path, recovery=False)
+    second_boot = EdgeSentinel("gateway-01", data_dir=tmp_path, recovery=False)
     calls = 0
 
     @second_boot.durable("publish")
@@ -298,7 +298,7 @@ async def test_recovery_false_disables_replay_on_start(tmp_path: Path) -> None:
 
 
 async def test_durable_decorator_publishes_events_on_the_runtime_bus(tmp_path: Path) -> None:
-    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    guard = EdgeSentinel("gateway-01", data_dir=tmp_path)
     seen: list[Event] = []
 
     async def collect(event: Event) -> None:
@@ -325,7 +325,7 @@ async def test_durable_decorator_publishes_events_on_the_runtime_bus(tmp_path: P
 
 
 async def test_timeline_and_incidents_are_accessible_before_start(tmp_path: Path) -> None:
-    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    guard = EdgeSentinel("gateway-01", data_dir=tmp_path)
 
     assert guard.incidents.open_incident is None
     assert guard.incidents.incidents == ()
@@ -336,7 +336,7 @@ async def test_timeline_and_incidents_are_accessible_before_start(tmp_path: Path
 
 
 async def test_boot_transitions_are_recorded_on_the_timeline(tmp_path: Path) -> None:
-    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    guard = EdgeSentinel("gateway-01", data_dir=tmp_path)
     await guard.start()
     try:
         events = await guard.timeline.query(type="state_change", newest_first=False)
@@ -350,7 +350,7 @@ async def test_boot_transitions_are_recorded_on_the_timeline(tmp_path: Path) -> 
 
 
 async def test_stop_transition_is_recorded_before_detaching(tmp_path: Path) -> None:
-    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    guard = EdgeSentinel("gateway-01", data_dir=tmp_path)
     await guard.start()
     await guard.stop()
 
@@ -372,7 +372,7 @@ async def test_events_published_after_stop_are_not_persisted(tmp_path: Path) -> 
     """Detach must happen before the database is closed, and must actually
     stop the EventLog handler -- otherwise a late publish would try to
     write to a closed connection and raise."""
-    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    guard = EdgeSentinel("gateway-01", data_dir=tmp_path)
     await guard.start()
     await guard.stop()
 
@@ -388,7 +388,7 @@ async def test_incidents_are_tracked_end_to_end_via_a_registered_network_monitor
     async def link_check() -> bool:
         return link_up
 
-    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    guard = EdgeSentinel("gateway-01", data_dir=tmp_path)
     monitor = guard.watch_network({NetworkLayer.LINK: link_check})
 
     await guard.start()
@@ -429,7 +429,7 @@ async def test_watch_hardware_drives_the_runtime_to_degraded_and_back(
     def metrics_check() -> HardwareStatus:
         return HardwareStatus(cpu_load_ratio=cpu_load, memory_used_ratio=0.1)
 
-    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    guard = EdgeSentinel("gateway-01", data_dir=tmp_path)
     monitor = guard.watch_hardware(cpu_high=0.5, metrics_check=metrics_check)
 
     await guard.start()
@@ -459,14 +459,14 @@ async def test_watch_hardware_drives_the_runtime_to_degraded_and_back(
 async def test_a_fresh_runtime_re_attaches_timeline_and_incidents_cleanly(
     tmp_path: Path,
 ) -> None:
-    """A stopped EdgeGuard is terminal and can't be restarted in place, but
+    """A stopped EdgeSentinel is terminal and can't be restarted in place, but
     a fresh instance pointed at the same data directory (e.g. after a
     process restart) must attach and record events just as cleanly."""
-    first = EdgeGuard("gateway-01", data_dir=tmp_path)
+    first = EdgeSentinel("gateway-01", data_dir=tmp_path)
     await first.start()
     await first.stop()
 
-    second = EdgeGuard("gateway-01", data_dir=tmp_path)
+    second = EdgeSentinel("gateway-01", data_dir=tmp_path)
     await second.start()
     try:
         # first's own boot + shutdown sequence (4 events) is already in the

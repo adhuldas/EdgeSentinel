@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from edgeguard.persistence.database import Database
-from edgeguard.persistence.migrations import MIGRATIONS
+from edgesentinel.persistence.database import Database
+from edgesentinel.persistence.migrations import MIGRATIONS
 
 
 async def test_connect_is_idempotent(database: Database) -> None:

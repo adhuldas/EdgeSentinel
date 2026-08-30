@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import datetime as dt
 
-from edgeguard.core.events import Event, Severity
-from edgeguard.core.state import RuntimeState
-from edgeguard.diagnostics.incidents import Incident
-from edgeguard.diagnostics.report import (
+from edgesentinel.core.events import Event, Severity
+from edgesentinel.core.state import RuntimeState
+from edgesentinel.diagnostics.incidents import Incident
+from edgesentinel.diagnostics.report import (
     format_event,
     format_incident,
     format_incidents,

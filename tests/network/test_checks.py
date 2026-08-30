@@ -5,7 +5,7 @@ import socket
 
 import pytest
 
-from edgeguard.network.checks import dns_resolves, tcp_reachable
+from edgesentinel.network.checks import dns_resolves, tcp_reachable
 
 
 async def _free_port() -> int:

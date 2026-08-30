@@ -3,13 +3,13 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "edgeguard"
+name = "edgesentinel"
 dynamic = ["version"]
-description = "A reliability runtime for Linux edge devices: applications describe what should happen, edgeguard handles how it survives failure."
+description = "A reliability runtime for Linux edge devices: applications describe what should happen, edgesentinel handles how it survives failure."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11"
-authors = [{ name = "edgeguard contributors" }]
+authors = [{ name = "edgesentinel contributors" }]
 keywords = [
   "edge-computing",
   "reliability",
@@ -35,7 +35,7 @@ classifiers = [
 dependencies = []
 
 [project.scripts]
-edgeguard = "edgeguard.cli.main:main"
+edgesentinel = "edgesentinel.cli.main:main"
 
 [project.optional-dependencies]
 mqtt = ["paho-mqtt>=2.0"]
@@ -50,16 +50,16 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/edgeguard/edgeguard"
-Repository = "https://github.com/edgeguard/edgeguard"
-Issues = "https://github.com/edgeguard/edgeguard/issues"
-Changelog = "https://github.com/edgeguard/edgeguard/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/edgesentinel/edgesentinel"
+Repository = "https://github.com/edgesentinel/edgesentinel"
+Issues = "https://github.com/edgesentinel/edgesentinel/issues"
+Changelog = "https://github.com/edgesentinel/edgesentinel/blob/main/CHANGELOG.md"
 
 [tool.hatch.version]
-path = "src/edgeguard/__init__.py"
+path = "src/edgesentinel/__init__.py"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/edgeguard"]
+packages = ["src/edgesentinel"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -76,7 +76,7 @@ select = ["E", "F", "I", "UP", "B", "SIM", "ASYNC", "C4", "RUF"]
 ignore = ["RUF012"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["edgeguard"]
+known-first-party = ["edgesentinel"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -90,13 +90,13 @@ module = "tests.*"
 disallow_untyped_defs = false
 
 [[tool.mypy.overrides]]
-# Optional dependency (the `edgeguard[mqtt]` extra) with no type stubs;
+# Optional dependency (the `edgesentinel[mqtt]` extra) with no type stubs;
 # only ever imported lazily inside a function body, never at module scope.
 module = "paho.*"
 ignore_missing_imports = true
 
 [tool.coverage.run]
-source = ["edgeguard"]
+source = ["edgesentinel"]
 branch = true
 
 [tool.coverage.report]

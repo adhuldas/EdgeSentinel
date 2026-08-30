@@ -4,11 +4,11 @@ import asyncio
 
 import pytest
 
-from edgeguard.core.events import Event, EventBus
-from edgeguard.resilience.circuit_breaker import CircuitBreaker, CircuitBreakerOpenError
-from edgeguard.resilience.policy import build_reliable_decorator
-from edgeguard.resilience.retry import RetryPolicy
-from edgeguard.resilience.timeout import OperationTimeoutError
+from edgesentinel.core.events import Event, EventBus
+from edgesentinel.resilience.circuit_breaker import CircuitBreaker, CircuitBreakerOpenError
+from edgesentinel.resilience.policy import build_reliable_decorator
+from edgesentinel.resilience.retry import RetryPolicy
+from edgesentinel.resilience.timeout import OperationTimeoutError
 
 
 class FlakyError(Exception):

@@ -7,17 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-edgeguard is being built in phases (see `README.md#development-status`).
+edgesentinel is being built in phases (see `README.md#development-status`).
 This is **Phase 7**: the runtime is not yet feature-complete and should not
 be used in production.
 
 ### Added
 
-- Hardware metrics monitoring (`edgeguard.metrics.MetricsMonitor`): polls
+- Hardware metrics monitoring (`edgesentinel.metrics.MetricsMonitor`): polls
   CPU load average, memory pressure, and (where available) SoC
   temperature, stdlib-only (`os.getloadavg`, `/proc/meminfo`, a Linux
   thermal zone under `/sys/class/thermal`) via injectable checks (see
-  `edgeguard.metrics.checks`) so tests never touch the real filesystem or
+  `edgesentinel.metrics.checks`) so tests never touch the real filesystem or
   depend on running on Linux. Every reading gracefully reports "nothing to
   report" (`0.0`/`None`) rather than raising wherever its source isn't
   available, so a caller that only cares about one metric never has to
@@ -34,23 +34,23 @@ be used in production.
   runtime's event bus and lifecycle state (`HEALTHY`/`DEGRADED`/`FAILED`),
   the same registration-before-start contract as `guard.watch_network()`
   and `guard.watch_storage()`.
-- HTTP webhook forwarding (`edgeguard.integrations.HttpEventPublisher`):
+- HTTP webhook forwarding (`edgesentinel.integrations.HttpEventPublisher`):
   subscribes to an `EventBus` and POSTs each event as JSON to a configured
   URL, built on stdlib `urllib.request` wrapped in `asyncio.to_thread` --
   no extra dependency needed. Supports extra headers, a per-request
   timeout, and `min_severity` filtering; a transport failure or non-2xx
   status is logged, never propagated, the same way `EventBus.publish`
   itself never lets a subscriber's exception escape.
-- MQTT forwarding (`edgeguard.integrations.MqttPublisher`): the same
+- MQTT forwarding (`edgesentinel.integrations.MqttPublisher`): the same
   attach/detach/`min_severity` shape as the HTTP publisher, but talking to
   a small structural `MqttClient` protocol instead of a concrete library,
   so the module has no import-time dependency on `paho-mqtt`. Connecting
   for real (`connect()`, with no client supplied) lazily imports
   `paho.mqtt.client` and raises a clear `ImportError` with install
-  instructions if the optional `edgeguard[mqtt]` extra isn't installed.
+  instructions if the optional `edgesentinel[mqtt]` extra isn't installed.
   Topics are either a fixed string or a per-event `TopicBuilder` callable,
-  defaulting to `edgeguard/{component}/{type}`.
-- Durable event timeline (`edgeguard.diagnostics.EventLog`): subscribes to
+  defaulting to `edgesentinel/{component}/{type}`.
+- Durable event timeline (`edgesentinel.diagnostics.EventLog`): subscribes to
   the runtime's `EventBus` and persists every published event to a new
   `events` table (migration version 4), so "what happened, and when"
   survives a restart and is inspectable from a separate process (e.g. the
@@ -59,7 +59,7 @@ be used in production.
   table's growth on long-running devices. Events are ordered by insertion
   (`id`), not `timestamp`, since SQLite's one-second timestamp resolution
   can't disambiguate several events published in the same second.
-- Incident tracking (`edgeguard.diagnostics.IncidentTracker`,
+- Incident tracking (`edgesentinel.diagnostics.IncidentTracker`,
   `build_incidents()`): every Phase 4 subsystem escalates through the same
   `RuntimeState` lifecycle rather than reporting problems directly, so a
   single `state_change` event stream is enough to derive "incidents" --
@@ -69,16 +69,16 @@ be used in production.
   the same incidents offline by replaying an already-persisted,
   chronologically-ordered event sequence -- what the CLI uses, since it has
   no live bus to attach to.
-- Human-readable rendering (`edgeguard.diagnostics.report`): `format_event`,
+- Human-readable rendering (`edgesentinel.diagnostics.report`): `format_event`,
   `format_timeline`, `format_incident`, `format_incidents`, and
   `summarize_incidents`, shared by the CLI and any future dashboard so
   formatting logic isn't duplicated between them.
 - `guard.timeline` and `guard.incidents`: an `EventLog` and `IncidentTracker`
-  wired to every `EdgeGuard` instance, attached right after migrations run
+  wired to every `EdgeSentinel` instance, attached right after migrations run
   during `start()` (so even the BOOTING/INITIALIZING boot sequence is
   captured) and detached before the database closes during `stop()`.
-- The `edgeguard` CLI (`edgeguard.cli`, installed as a console script):
-  `edgeguard --name <name> --data-dir <dir> status|timeline|incidents`.
+- The `edgesentinel` CLI (`edgesentinel.cli`, installed as a console script):
+  `edgesentinel --name <name> --data-dir <dir> status|timeline|incidents`.
   Reads a runtime's on-disk SQLite database directly via a fresh
   `Database`/`EventLog` pair -- it never talks to a running process, so it
   works the same whether the runtime is live or stopped, thanks to WAL
@@ -86,22 +86,22 @@ be used in production.
   `--component`, `--type`, `--min-severity`, `--limit`, and
   `--oldest-first`; `incidents` replays the timeline through
   `build_incidents()` and prints a summary.
-- Layered connectivity monitoring (`edgeguard.network`): `tcp_reachable()` /
+- Layered connectivity monitoring (`edgesentinel.network`): `tcp_reachable()` /
   `dns_resolves()` stdlib-only checks, and `NetworkMonitor`, which polls a
   configurable subset of LINK/GATEWAY/DNS/INTERNET checks bottom-up,
   stopping at the first failing layer, and publishes `network_status_changed`
   only when the highest reachable layer actually changes.
-- In-process task supervision (`edgeguard.process`): `Supervisor` restarts a
+- In-process task supervision (`edgesentinel.process`): `Supervisor` restarts a
   crashed or exited async task with backoff, and gives up -- reporting
   itself `crashed` -- after `max_crashes` failures within a sliding time
   window, rather than restarting a broken task forever.
-- Heartbeat-based staleness detection (`edgeguard.process.Watchdog`):
+- Heartbeat-based staleness detection (`edgesentinel.process.Watchdog`):
   registered targets call `heartbeat()` from their own loop; anything that
   stops checking in within its configured timeout is reported stale via
   `watchdog_target_stale` / `watchdog_target_recovered` events, published
   only on the transition, not on every poll.
 - Free-space and inode monitoring with scoped cleanup
-  (`edgeguard.storage`): `StorageMonitor` polls free bytes (and, optionally,
+  (`edgesentinel.storage`): `StorageMonitor` polls free bytes (and, optionally,
   free inodes) on a path and runs a caller-supplied sequence of cleanup
   actions, in order, when usage drops below a low-water mark, stopping as
   soon as one frees enough space.
@@ -111,15 +111,15 @@ be used in production.
   runtime to `FAILED` when they give up. All four only touch runtime states
   they own, so concurrent subsystems can't fight each other or interfere
   with boot/shutdown.
-- `EdgeGuard.watch_network()`, `EdgeGuard.supervise()`, `EdgeGuard.watchdog`
-  (a lazily-created, shared `Watchdog`), and `EdgeGuard.watch_storage()`
+- `EdgeSentinel.watch_network()`, `EdgeSentinel.supervise()`, `EdgeSentinel.watchdog`
+  (a lazily-created, shared `Watchdog`), and `EdgeSentinel.watch_storage()`
   factory methods that auto-wire a new subsystem to the runtime's event bus
   and lifecycle state. Like `guard.durable(...)`, registering a subsystem
   before `start()` also makes the runtime start and stop it automatically
   alongside its own lifecycle.
 - Project scaffolding: `pyproject.toml` (hatchling, src layout), Ruff, MyPy
   (strict), pytest/pytest-asyncio, pre-commit, GitHub Actions CI.
-- `EdgeGuard` runtime with `start()` / `stop()` / async context manager.
+- `EdgeSentinel` runtime with `start()` / `stop()` / async context manager.
 - Strongly-typed lifecycle state machine (`RuntimeState`) with an explicit,
   validated transition graph. Invalid transitions raise
   `InvalidStateTransitionError`.
@@ -157,7 +157,7 @@ be used in production.
   `durable_operation_completed`, `durable_operation_retry_pending`, and
   `durable_operation_exhausted` events.
 - Startup replay (`replay_pending`, wired into `start()`, disabled via
-  `EdgeGuard(..., recovery=False)`): every intent left `pending` or
+  `EdgeSentinel(..., recovery=False)`): every intent left `pending` or
   `in_progress` by a previous run is replayed before the runtime becomes
   healthy. Each intent replays independently -- one intent failing, or an
   intent whose operation isn't registered on this boot, is logged and

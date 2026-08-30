@@ -4,7 +4,7 @@ from collections.abc import Awaitable, Callable
 
 import pytest
 
-from edgeguard.resilience.retry import RetryAttempt, RetryPolicy
+from edgesentinel.resilience.retry import RetryAttempt, RetryPolicy
 
 
 class FlakyError(Exception):

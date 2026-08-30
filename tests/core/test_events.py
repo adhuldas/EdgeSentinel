@@ -4,7 +4,7 @@ import logging
 
 import pytest
 
-from edgeguard.core.events import Event, EventBus, Severity
+from edgesentinel.core.events import Event, EventBus, Severity
 
 
 async def test_publish_with_no_subscribers_does_nothing() -> None:
@@ -91,7 +91,7 @@ async def test_failing_handler_does_not_prevent_other_handlers(
     bus.subscribe(bad_handler)
     bus.subscribe(good_handler)
 
-    with caplog.at_level(logging.ERROR, logger="edgeguard.events"):
+    with caplog.at_level(logging.ERROR, logger="edgesentinel.events"):
         await bus.publish(Event(type="x", component="test"))
 
     assert len(received) == 1

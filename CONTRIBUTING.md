@@ -1,6 +1,6 @@
-# Contributing to edgeguard
+# Contributing to edgesentinel
 
-edgeguard targets production edge devices, so correctness, crash-safety, and
+edgesentinel targets production edge devices, so correctness, crash-safety, and
 deterministic behavior take priority over new features. Please read this
 before opening a PR.
 
@@ -44,8 +44,8 @@ question) much harder.
   debates -- if Ruff doesn't flag it, it's fine.
 - `mypy --strict` must pass with no new `# type: ignore`s unless justified
   in a comment.
-- Public API surface is deliberately small (`edgeguard/__init__.py`).
-  Internal modules (`edgeguard.core.*`, etc.) are not part of the stable
+- Public API surface is deliberately small (`edgesentinel/__init__.py`).
+  Internal modules (`edgesentinel.core.*`, etc.) are not part of the stable
   API; if you need something from them at the top level, propose adding it
   to `__all__` rather than reaching into internals.
 

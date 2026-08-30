@@ -11,12 +11,12 @@ from pathlib import Path
 
 import pytest
 
-from edgeguard.persistence.database import Database
+from edgesentinel.persistence.database import Database
 
 
 @pytest.fixture
 def db_path(tmp_path: Path) -> Path:
-    return tmp_path / "edgeguard.sqlite3"
+    return tmp_path / "edgesentinel.sqlite3"
 
 
 @pytest.fixture

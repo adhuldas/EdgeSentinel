@@ -5,18 +5,18 @@ from pathlib import Path
 
 import pytest
 
-from edgeguard import EdgeGuard
-from edgeguard.cli.main import main
-from edgeguard.network.monitor import NetworkLayer
+from edgesentinel import EdgeSentinel
+from edgesentinel.cli.main import main
+from edgesentinel.network.monitor import NetworkLayer
 
 
 def _seed_runtime(data_dir: Path, name: str = "gateway-01") -> None:
-    """Start and stop a real EdgeGuard runtime against ``data_dir``, so the
+    """Start and stop a real EdgeSentinel runtime against ``data_dir``, so the
     CLI has an actual on-disk database -- created the same way a real
     device would -- to read."""
 
     async def run() -> None:
-        guard = EdgeGuard(name, data_dir=data_dir)
+        guard = EdgeSentinel(name, data_dir=data_dir)
         await guard.start()
         await guard.stop()
 
@@ -31,7 +31,7 @@ def _seed_runtime_with_incident(data_dir: Path, name: str = "gateway-01") -> Non
 
     async def run() -> None:
         nonlocal link_up
-        guard = EdgeGuard(name, data_dir=data_dir)
+        guard = EdgeSentinel(name, data_dir=data_dir)
         monitor = guard.watch_network({NetworkLayer.LINK: link_check})
         await guard.start()
         link_up = False

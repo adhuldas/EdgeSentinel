@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from edgeguard.core.events import Event, EventBus, StateChangeEvent
-from edgeguard.core.exceptions import InvalidStateTransitionError
-from edgeguard.core.lifecycle import LifecycleManager
-from edgeguard.core.state import RuntimeState, StateMachine
+from edgesentinel.core.events import Event, EventBus, StateChangeEvent
+from edgesentinel.core.exceptions import InvalidStateTransitionError
+from edgesentinel.core.lifecycle import LifecycleManager
+from edgesentinel.core.state import RuntimeState, StateMachine
 
 
 def make_manager() -> tuple[LifecycleManager, StateMachine, EventBus, list[StateChangeEvent]]:

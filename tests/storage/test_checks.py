@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from edgeguard.storage.checks import StorageStatus, disk_usage
+from edgesentinel.storage.checks import StorageStatus, disk_usage
 
 
 def test_disk_usage_reads_a_real_path(tmp_path: object) -> None:

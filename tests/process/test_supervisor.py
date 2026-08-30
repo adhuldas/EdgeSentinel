@@ -6,10 +6,10 @@ from collections.abc import Callable
 
 import pytest
 
-from edgeguard.core.events import Event, EventBus
-from edgeguard.core.exceptions import InvalidStateTransitionError
-from edgeguard.core.state import RuntimeState
-from edgeguard.process.supervisor import Supervisor
+from edgesentinel.core.events import Event, EventBus
+from edgesentinel.core.exceptions import InvalidStateTransitionError
+from edgesentinel.core.state import RuntimeState
+from edgesentinel.process.supervisor import Supervisor
 
 
 async def _instant_sleep(_: float) -> None:

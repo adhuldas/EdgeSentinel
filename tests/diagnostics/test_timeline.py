@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import datetime as dt
 
-from edgeguard.core.events import Event, EventBus, Severity
-from edgeguard.diagnostics.timeline import EventLog
-from edgeguard.persistence.database import Database
+from edgesentinel.core.events import Event, EventBus, Severity
+from edgesentinel.diagnostics.timeline import EventLog
+from edgesentinel.persistence.database import Database
 
 
 def _event(

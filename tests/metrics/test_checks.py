@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from edgeguard.metrics.checks import (
+from edgesentinel.metrics.checks import (
     cpu_load_ratio,
     memory_used_ratio,
     read_hardware_status,

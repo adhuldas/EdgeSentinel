@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import pytest
 
-from edgeguard.core.events import Event, EventBus, Severity
-from edgeguard.integrations.mqtt import MqttPublisher
+from edgesentinel.core.events import Event, EventBus, Severity
+from edgesentinel.integrations.mqtt import MqttPublisher
 
 
 class _FakeMqttClient:
@@ -100,7 +100,7 @@ async def test_attach_publishes_to_the_default_topic() -> None:
 
     assert len(client.published) == 1
     topic, payload, qos = client.published[0]
-    assert topic == "edgeguard/runtime/state_change"
+    assert topic == "edgesentinel/runtime/state_change"
     assert '"type": "state_change"' in payload
     assert qos == 0
 
@@ -194,5 +194,5 @@ def test_constructing_without_a_client_does_not_require_paho_mqtt() -> None:
 
 async def test_connect_without_a_client_or_paho_mqtt_raises_a_clear_import_error() -> None:
     publisher = MqttPublisher(host="broker.local")
-    with pytest.raises(ImportError, match="edgeguard\\[mqtt\\]"):
+    with pytest.raises(ImportError, match="edgesentinel\\[mqtt\\]"):
         await publisher.connect()

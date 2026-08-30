@@ -1,11 +1,11 @@
-# edgeguard
+# edgesentinel
 
 **A reliability runtime for Linux edge devices.**
 
-> Applications describe *what* they want to happen. edgeguard handles *how*
+> Applications describe *what* they want to happen. edgesentinel handles *how*
 > that survives failure.
 
-[![CI](https://github.com/edgeguard/edgeguard/actions/workflows/ci.yml/badge.svg)](https://github.com/edgeguard/edgeguard/actions/workflows/ci.yml)
+[![CI](https://github.com/edgesentinel/edgesentinel/actions/workflows/ci.yml/badge.svg)](https://github.com/edgesentinel/edgesentinel/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![status](https://img.shields.io/badge/status-alpha%20%E2%80%94%20phase%207-orange)
 
@@ -33,18 +33,18 @@ a reboot; not blowing the SD card up with log writes while retrying;
 noticing that a supervised process is stuck in a crash loop instead of
 restarting it forever.
 
-## What edgeguard is
+## What edgesentinel is
 
-edgeguard is a small, asyncio-first runtime you embed in your edge
+edgesentinel is a small, asyncio-first runtime you embed in your edge
 application. You tell it what durable operations, retry policies, and
 supervised processes you have; it tracks device and network health, persists
 enough state locally to survive a crash or power loss, and gives you a
 timeline of what happened when things went wrong.
 
 ```python
-from edgeguard import EdgeGuard
+from edgesentinel import EdgeSentinel
 
-guard = EdgeGuard("production-gateway", data_dir="/var/lib/edgeguard")
+guard = EdgeSentinel("production-gateway", data_dir="/var/lib/edgesentinel")
 
 await guard.start()
 
@@ -61,7 +61,7 @@ await guard.stop()
 
 ## How this differs from a retry library
 
-| | Retry library | edgeguard |
+| | Retry library | edgesentinel |
 |---|---|---|
 | Scope | One function call | Whole application lifecycle |
 | Network awareness | None (just fails and retries) | Link / gateway / DNS / internet / service, as separate layers |
@@ -70,7 +70,7 @@ await guard.stop()
 | Storage awareness | No | Monitors free space / inodes, scoped cleanup policies |
 | Observability | Whatever you bolt on | Built-in event timeline and incident reports |
 
-edgeguard uses retry, backoff, and circuit breakers internally -- they're
+edgesentinel uses retry, backoff, and circuit breakers internally -- they're
 necessary, not sufficient. It is not a replacement for `tenacity`; it's the
 layer above that decides *when* to retry, *what* to do if retrying never
 works, and *how* to prove afterwards what happened.
@@ -82,8 +82,8 @@ Engineers building applications that run unattended on Linux edge hardware
 deployments) and need them to keep working -- or fail safely and recover on
 their own -- without a human nearby to restart things.
 
-edgeguard complements `systemd`, it doesn't replace it. Use `systemd` (or
-your container runtime) to keep *your process* running; use edgeguard inside
+edgesentinel complements `systemd`, it doesn't replace it. Use `systemd` (or
+your container runtime) to keep *your process* running; use edgesentinel inside
 that process to keep *your application's operations* correct across network
 loss, dependency failure, and crashes.
 
@@ -92,13 +92,13 @@ loss, dependency failure, and crashes.
 ```
 APPLICATION
      |
-  EDGEGUARD
+  EDGESENTINEL
      |
 RELIABLE EXECUTION  ->  FAILURE DETECTION  ->  RECOVERY  ->  DIAGNOSTICS
 ```
 
 ```
-edgeguard/
+edgesentinel/
 ├── core/          runtime, lifecycle state machine, events           [Phase 1 - done]
 ├── persistence/   SQLite storage, migrations, journal                [Phase 1 & 3 - done]
 ├── resilience/    retry, backoff, timeout, circuit breaker           [Phase 2 - done]
@@ -109,17 +109,17 @@ edgeguard/
 ├── diagnostics/   event timeline, incidents, reports                 [Phase 5 - done]
 ├── integrations/  MQTT, HTTP (optional extras)                       [Phase 6 - done]
 ├── metrics/       CPU/memory/temperature monitoring, mitigation      [Phase 7 - done]
-└── cli/           edgeguard status / timeline / incidents            [Phase 5 - done]
+└── cli/           edgesentinel status / timeline / incidents            [Phase 5 - done]
 ```
 
 ## Development status
 
-edgeguard is built in phases, each one fully tested before the next begins.
+edgesentinel is built in phases, each one fully tested before the next begins.
 **This is Phase 7.** See `CHANGELOG.md` for exactly what exists today.
 
 Implemented and tested:
 
-- `EdgeGuard` runtime: `start()` / `stop()` / async context manager.
+- `EdgeSentinel` runtime: `start()` / `stop()` / async context manager.
 - A strongly-typed lifecycle state machine (`BOOTING` -> `INITIALIZING` ->
   `HEALTHY` / `DEGRADED` / `OFFLINE` / `RECOVERING` / `FAILED` -> `STOPPING`
   -> `STOPPED`) that rejects invalid transitions.
@@ -181,22 +181,22 @@ Implemented and tested:
   regardless of which Phase 4 subsystem triggered them. `build_incidents()`
   reconstructs the same incidents offline from a persisted timeline, for
   inspecting a runtime that isn't currently running.
-- The `edgeguard` CLI: `edgeguard --name <name> --data-dir <dir>
+- The `edgesentinel` CLI: `edgesentinel --name <name> --data-dir <dir>
   status|timeline|incidents`, reading a runtime's on-disk SQLite database
   directly -- no live runtime process required, thanks to WAL mode.
-- `HttpEventPublisher` (`edgeguard.integrations.http`): forwards events as
+- `HttpEventPublisher` (`edgesentinel.integrations.http`): forwards events as
   JSON POSTs to a webhook URL. Stdlib-only (`urllib` wrapped in
   `asyncio.to_thread`), so no extra dependency is needed to use it.
-- `MqttPublisher` (`edgeguard.integrations.mqtt`): forwards events to an
+- `MqttPublisher` (`edgesentinel.integrations.mqtt`): forwards events to an
   MQTT broker. Talks to a small structural `MqttClient` protocol rather
   than a concrete library, so the module itself has no import-time
   dependency; connecting for real needs the `paho-mqtt` package (`pip
-  install edgeguard[mqtt]`).
+  install edgesentinel[mqtt]`).
 - Both integrations support `min_severity` filtering and attach/detach the
   same way `EventLog` and `IncidentTracker` do, and never let a publish
   failure (network error, bad status, broker down) propagate and crash the
   reliability path they're observing.
-- `MetricsMonitor` (`edgeguard.metrics`): polls CPU load average, memory
+- `MetricsMonitor` (`edgesentinel.metrics`): polls CPU load average, memory
   pressure, and (where available) SoC temperature, reading them via
   stdlib-only, injectable checks (`os.getloadavg`, `/proc/meminfo`, a Linux
   thermal zone) -- no `psutil` dependency. Same low/high-water-mark shape
@@ -214,7 +214,7 @@ listed under "Implemented" above is a design target, not shipped behavior.
 ## Installation
 
 ```bash
-pip install edgeguard          # not yet published -- see status above
+pip install edgesentinel          # not yet published -- see status above
 ```
 
 For local development, see `CONTRIBUTING.md`.
@@ -227,11 +227,11 @@ pip install -e ".[dev]"
 
 ```python
 import asyncio
-from edgeguard import EdgeGuard, RuntimeState
+from edgesentinel import EdgeSentinel, RuntimeState
 
 
 async def main() -> None:
-    guard = EdgeGuard("my-device", data_dir="./data")
+    guard = EdgeSentinel("my-device", data_dir="./data")
 
     @guard.on_state_change
     async def on_change(event):
@@ -257,7 +257,7 @@ means "this operation isn't succeeding even after retrying", not "one
 attempt failed", so a single flaky call never trips the breaker by itself.
 
 ```python
-guard = EdgeGuard("my-device", data_dir="./data")
+guard = EdgeSentinel("my-device", data_dir="./data")
 
 
 @guard.durable("publish_reading")

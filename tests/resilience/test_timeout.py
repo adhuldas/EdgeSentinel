@@ -4,8 +4,8 @@ import asyncio
 
 import pytest
 
-from edgeguard.core.exceptions import EdgeGuardError
-from edgeguard.resilience.timeout import OperationTimeoutError, with_timeout
+from edgesentinel.core.exceptions import EdgeSentinelError
+from edgesentinel.resilience.timeout import OperationTimeoutError, with_timeout
 
 
 async def test_fast_operation_completes_within_timeout() -> None:
@@ -25,12 +25,12 @@ async def test_slow_operation_raises_operation_timeout_error() -> None:
         await with_timeout(op, 0.01)
 
 
-async def test_operation_timeout_error_is_an_edgeguard_error() -> None:
+async def test_operation_timeout_error_is_an_edgesentinel_error() -> None:
     async def op() -> str:
         await asyncio.sleep(10)
         return "too slow"
 
-    with pytest.raises(EdgeGuardError):
+    with pytest.raises(EdgeSentinelError):
         await with_timeout(op, 0.01)
 
 

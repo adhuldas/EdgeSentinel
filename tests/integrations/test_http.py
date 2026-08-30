@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
-from edgeguard.core.events import Event, EventBus, Severity
-from edgeguard.integrations.http import HttpEventPublisher
+from edgesentinel.core.events import Event, EventBus, Severity
+from edgesentinel.integrations.http import HttpEventPublisher
 
 
 class _FakeTransport:
