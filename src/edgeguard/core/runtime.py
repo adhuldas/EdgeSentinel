@@ -31,6 +31,8 @@ from edgeguard.durability.operations import (
     build_durable_decorator,
     replay_pending,
 )
+from edgeguard.metrics.checks import read_hardware_status
+from edgeguard.metrics.monitor import MetricsCheck, MetricsMonitor, Mitigation
 from edgeguard.network.monitor import LayerCheck, NetworkLayer, NetworkMonitor
 from edgeguard.persistence.database import Database
 from edgeguard.process.supervisor import Supervisor, TaskFunc
@@ -454,6 +456,46 @@ class EdgeGuard:
         self._subsystems.append(monitor)
         return monitor
 
+    def watch_hardware(
+        self,
+        *,
+        cpu_high: float | None = None,
+        memory_high: float | None = None,
+        temperature_high_celsius: float | None = None,
+        mitigations: Sequence[Mitigation] = (),
+        interval: float = 30.0,
+        metrics_check: MetricsCheck = read_hardware_status,
+    ) -> MetricsMonitor:
+        """Create a :class:`~edgeguard.metrics.monitor.MetricsMonitor` wired
+        to this runtime.
+
+        High CPU load, memory pressure, or temperature moves this runtime
+        to ``DEGRADED`` (back to ``HEALTHY`` on recovery); mitigation
+        actions exhausting without bringing usage back down escalates to
+        ``FAILED``. See :meth:`watch_network` for the registration-before-
+        start contract that makes the monitor start and stop with the
+        runtime.
+
+        Args:
+            cpu_high, memory_high, temperature_high_celsius, mitigations,
+            interval, metrics_check: See
+                :class:`~edgeguard.metrics.monitor.MetricsMonitor`.
+        """
+        monitor = MetricsMonitor(
+            cpu_high=cpu_high,
+            memory_high=memory_high,
+            temperature_high_celsius=temperature_high_celsius,
+            mitigations=mitigations,
+            interval=interval,
+            events=self._events,
+            component=self._name,
+            set_state=self._set_runtime_state,
+            get_state=lambda: self.state,
+            metrics_check=metrics_check,
+        )
+        self._subsystems.append(monitor)
+        return monitor
+
     async def _set_runtime_state(self, target: RuntimeState) -> None:
         await self._lifecycle.set_state(target, component=self._name)
 
@@ -517,9 +559,10 @@ class EdgeGuard:
 
         Replays unfinished durable operations (see :meth:`durable`) unless
         ``recovery=False`` was passed to the constructor, then starts every
-        network/process/storage subsystem registered via :meth:`watch_network`,
-        :meth:`supervise`, :attr:`watchdog`, or :meth:`watch_storage` before
-        this call. A subsystem that fails to start is treated the same as
+        network/process/storage/metrics subsystem registered via
+        :meth:`watch_network`, :meth:`supervise`, :attr:`watchdog`,
+        :meth:`watch_storage`, or :meth:`watch_hardware` before this call.
+        A subsystem that fails to start is treated the same as
         any other initialization failure -- it fails the boot rather than
         leaving the runtime looking healthy with a subsystem silently not
         running.

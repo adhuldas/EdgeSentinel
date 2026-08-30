@@ -7,7 +7,7 @@
 
 [![CI](https://github.com/edgeguard/edgeguard/actions/workflows/ci.yml/badge.svg)](https://github.com/edgeguard/edgeguard/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.11%2B-blue)
-![status](https://img.shields.io/badge/status-alpha%20%E2%80%94%20phase%206-orange)
+![status](https://img.shields.io/badge/status-alpha%20%E2%80%94%20phase%207-orange)
 
 ---
 
@@ -108,13 +108,14 @@ edgeguard/
 ├── storage/       free-space monitoring, scoped cleanup              [Phase 4 - done]
 ├── diagnostics/   event timeline, incidents, reports                 [Phase 5 - done]
 ├── integrations/  MQTT, HTTP (optional extras)                       [Phase 6 - done]
+├── metrics/       CPU/memory/temperature monitoring, mitigation      [Phase 7 - done]
 └── cli/           edgeguard status / timeline / incidents            [Phase 5 - done]
 ```
 
 ## Development status
 
 edgeguard is built in phases, each one fully tested before the next begins.
-**This is Phase 6.** See `CHANGELOG.md` for exactly what exists today.
+**This is Phase 7.** See `CHANGELOG.md` for exactly what exists today.
 
 Implemented and tested:
 
@@ -195,11 +196,20 @@ Implemented and tested:
   same way `EventLog` and `IncidentTracker` do, and never let a publish
   failure (network error, bad status, broker down) propagate and crash the
   reliability path they're observing.
+- `MetricsMonitor` (`edgeguard.metrics`): polls CPU load average, memory
+  pressure, and (where available) SoC temperature, reading them via
+  stdlib-only, injectable checks (`os.getloadavg`, `/proc/meminfo`, a Linux
+  thermal zone) -- no `psutil` dependency. Same low/high-water-mark shape
+  as `StorageMonitor`: any configured threshold being crossed runs a
+  caller-supplied sequence of mitigation actions, in order, stopping once
+  usage is back down; exhausting them without recovering escalates the
+  runtime the same way cleanup exhaustion does for storage.
+- `guard.watch_hardware()`: factory method wiring a `MetricsMonitor` to the
+  runtime's event bus and lifecycle state, same registration-before-start
+  contract as `guard.watch_network()` and `guard.watch_storage()`.
 
-Not yet implemented -- present in the design and the module layout, but do
-not use in production yet: hardware metrics. Anything described elsewhere
-in this repository's design docs that isn't listed under "Implemented"
-above is a design target, not shipped behavior.
+Anything described elsewhere in this repository's design docs that isn't
+listed under "Implemented" above is a design target, not shipped behavior.
 
 ## Installation
 

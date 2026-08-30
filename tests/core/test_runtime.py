@@ -9,6 +9,7 @@ from edgeguard import EdgeGuard, RuntimeState
 from edgeguard.core.events import Event, StateChangeEvent
 from edgeguard.core.exceptions import RuntimeAlreadyStartedError, RuntimeNotStartedError
 from edgeguard.durability.journal import IntentStatus
+from edgeguard.metrics.checks import HardwareStatus
 from edgeguard.network.monitor import NetworkLayer
 from edgeguard.persistence.database import Database
 
@@ -416,6 +417,41 @@ async def test_incidents_are_tracked_end_to_end_via_a_registered_network_monitor
 
         recorded = await guard.timeline.query(type="state_change", newest_first=False)
         assert any(e.metadata["current"] == "offline" for e in recorded)
+    finally:
+        await guard.stop()
+
+
+async def test_watch_hardware_drives_the_runtime_to_degraded_and_back(
+    tmp_path: Path,
+) -> None:
+    cpu_load = 0.1
+
+    def metrics_check() -> HardwareStatus:
+        return HardwareStatus(cpu_load_ratio=cpu_load, memory_used_ratio=0.1)
+
+    guard = EdgeGuard("gateway-01", data_dir=tmp_path)
+    monitor = guard.watch_hardware(cpu_high=0.5, metrics_check=metrics_check)
+
+    await guard.start()
+    try:
+        assert guard.state is RuntimeState.HEALTHY
+
+        cpu_load = 0.95
+        await monitor.check_once()
+
+        assert guard.state is RuntimeState.DEGRADED  # type: ignore[comparison-overlap]
+        open_incident = guard.incidents.open_incident
+        assert open_incident is not None
+
+        cpu_load = 0.1
+        await monitor.check_once()
+
+        assert guard.state is RuntimeState.HEALTHY
+        assert guard.incidents.open_incident is None
+
+        recorded = await guard.timeline.query(type="hardware_metrics_high", newest_first=False)
+        assert len(recorded) == 1
+        assert recorded[0].component == guard.name
     finally:
         await guard.stop()
 

@@ -8,11 +8,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [Unreleased]
 
 edgeguard is being built in phases (see `README.md#development-status`).
-This is **Phase 6**: the runtime is not yet feature-complete and should not
+This is **Phase 7**: the runtime is not yet feature-complete and should not
 be used in production.
 
 ### Added
 
+- Hardware metrics monitoring (`edgeguard.metrics.MetricsMonitor`): polls
+  CPU load average, memory pressure, and (where available) SoC
+  temperature, stdlib-only (`os.getloadavg`, `/proc/meminfo`, a Linux
+  thermal zone under `/sys/class/thermal`) via injectable checks (see
+  `edgeguard.metrics.checks`) so tests never touch the real filesystem or
+  depend on running on Linux. Every reading gracefully reports "nothing to
+  report" (`0.0`/`None`) rather than raising wherever its source isn't
+  available, so a caller that only cares about one metric never has to
+  special-case the platform for the others.
+- Mirrors `StorageMonitor`'s low/high-water-mark shape for "too much"
+  instead of "too little": any of `cpu_high`, `memory_high`, or
+  `temperature_high_celsius` being crossed runs a caller-supplied sequence
+  of mitigation actions, in order, re-checking every metric after each and
+  stopping once nothing is high any more. Exhausting configured
+  mitigations without recovering escalates the runtime, same as storage
+  cleanup exhaustion; a monitor with no mitigations configured is a plain
+  DEGRADED observer instead.
+- `guard.watch_hardware()`: factory method wiring a `MetricsMonitor` to the
+  runtime's event bus and lifecycle state (`HEALTHY`/`DEGRADED`/`FAILED`),
+  the same registration-before-start contract as `guard.watch_network()`
+  and `guard.watch_storage()`.
 - HTTP webhook forwarding (`edgeguard.integrations.HttpEventPublisher`):
   subscribes to an `EventBus` and POSTs each event as JSON to a configured
   URL, built on stdlib `urllib.request` wrapped in `asyncio.to_thread` --

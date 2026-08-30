@@ -5,7 +5,7 @@ loss, DNS failure, process crashes, disk exhaustion, unexpected reboots --
 without hand-rolling retry loops, journals, and recovery logic. Applications
 describe *what* should happen; edgeguard handles *how* it survives failure.
 
-This is Phase 6 of the project: the Phase 1 runtime (lifecycle state
+This is Phase 7 of the project: the Phase 1 runtime (lifecycle state
 machine, events, SQLite persistence), the Phase 2 resilience engine (retry,
 backoff, timeout, circuit breaker, ``@guard.reliable()``), Phase 3 durable
 operations (the intent journal and ``@guard.durable()``, with automatic
@@ -16,8 +16,10 @@ monitoring (``NetworkMonitor``, ``Supervisor``, ``Watchdog``,
 Phase 5 diagnostics (a durable event timeline and incident tracking --
 ``guard.timeline``, ``guard.incidents``, see :mod:`edgeguard.diagnostics`
 -- plus the ``edgeguard`` CLI for inspecting a runtime's on-disk state from
-a separate process), and Phase 6 integrations: forwarding events to a
-webhook or an MQTT broker (see :mod:`edgeguard.integrations`). See
+a separate process), Phase 6 integrations (forwarding events to a webhook
+or an MQTT broker, see :mod:`edgeguard.integrations`), and Phase 7 hardware
+metrics: CPU/memory/temperature monitoring with scoped mitigation, wired
+via ``guard.watch_hardware()`` (see :mod:`edgeguard.metrics`). See
 CHANGELOG.md for current status.
 """
 
