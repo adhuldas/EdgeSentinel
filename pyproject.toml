@@ -1,0 +1,107 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "edgeguard"
+dynamic = ["version"]
+description = "A reliability runtime for Linux edge devices: applications describe what should happen, edgeguard handles how it survives failure."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+authors = [{ name = "edgeguard contributors" }]
+keywords = [
+  "edge-computing",
+  "reliability",
+  "resilience",
+  "iot",
+  "raspberry-pi",
+  "asyncio",
+  "circuit-breaker",
+  "retry",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: System :: Distributed Computing",
+  "Topic :: System :: Networking :: Monitoring",
+  "Typing :: Typed",
+]
+dependencies = []
+
+[project.scripts]
+edgeguard = "edgeguard.cli.main:main"
+
+[project.optional-dependencies]
+mqtt = ["paho-mqtt>=2.0"]
+dev = [
+  "pytest>=8.0",
+  "pytest-asyncio>=0.24",
+  "pytest-cov>=5.0",
+  "ruff>=0.6",
+  "mypy>=1.11",
+  "build>=1.2",
+  "pre-commit>=3.8",
+]
+
+[project.urls]
+Homepage = "https://github.com/edgeguard/edgeguard"
+Repository = "https://github.com/edgeguard/edgeguard"
+Issues = "https://github.com/edgeguard/edgeguard/issues"
+Changelog = "https://github.com/edgeguard/edgeguard/blob/main/CHANGELOG.md"
+
+[tool.hatch.version]
+path = "src/edgeguard/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/edgeguard"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "ASYNC", "C4", "RUF"]
+ignore = ["RUF012"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["edgeguard"]
+
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "src"
+explicit_package_bases = true
+strict = true
+warn_unused_ignores = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+
+[[tool.mypy.overrides]]
+# Optional dependency (the `edgeguard[mqtt]` extra) with no type stubs;
+# only ever imported lazily inside a function body, never at module scope.
+module = "paho.*"
+ignore_missing_imports = true
+
+[tool.coverage.run]
+source = ["edgeguard"]
+branch = true
+
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+  "if TYPE_CHECKING:",
+  "raise NotImplementedError",
+]
